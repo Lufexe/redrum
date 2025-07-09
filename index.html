@@ -3,12 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Voice Reverser</title>
+  <title>REDЯURM</title>
   <style>
     :root { --clr-bg:#130f0a; }
-    html,body{height:100%;margin:0;padding:0;font-family:"Courier New",monospace;color:#eee;
-      background:var(--clr-bg) url("./image/fond-grunge.png") center/cover fixed no-repeat;
-      display:flex;flex-direction:column;align-items:center;justify-content:flex-start;touch-action:manipulation;}
+    html,body{
+      height:100%;margin:0;padding:0;
+      font-family:"Courier New",monospace;color:#eee;
+      background:var(--clr-bg) url("./fond-grunge.png") center/cover fixed no-repeat;
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+      touch-action:manipulation;
+    }
 
     /* ===== Header ===== */
     .header{margin-top:1.2rem;}
@@ -17,74 +21,146 @@
     @keyframes pulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.6);}}
 
     /* ===== Recorder Frame ===== */
-    .frame{width:min(92vw,420px);padding:1.8rem 1rem 2.6rem;
-      background:url("./image/cadre-magneto.png") center/contain no-repeat;background-size:100% 100%;
-      position:relative;display:flex;flex-direction:column;align-items:center;gap:1rem;box-sizing:border-box;}
+    .frame{
+      width:min(92vw,420px);
+      padding:1.8rem 1rem 2.6rem;
+      background:url("./cadre-magneto.png") center/contain no-repeat;
+      background-size:100% 100%;
+      position:relative;display:flex;flex-direction:column;align-items:center;gap:1rem;
+      box-sizing:border-box;
+    }
 
     /* ===== Buttons ===== */
-    .btn{width:min(28vw,130px);height:min(28vw,130px);background-size:cover;background-position:center;border:none;cursor:pointer;transition:transform .15s ease;touch-action:manipulation;}
-    .btn:active{transform:scale(.9);} .btn:disabled{filter:grayscale(1) brightness(.4);cursor:not-allowed;}
-    .btn.rec{background-image:url("./image/bouton-rec.png");}
-    .btn.play{background-image:url("./image/bouton-play.png");}
+    .btn{
+      width:min(28vw,130px);height:min(28vw,130px);
+      background-size:cover;background-position:center;border:none;cursor:pointer;
+      transition:transform .15s ease;touch-action:manipulation;
+    }
+    .btn:active{transform:scale(.9);} 
+    .btn:disabled{filter:grayscale(1) brightness(.4);cursor:not-allowed;}
+    .btn.rec{background-image:url("./bouton-rec.png");}
+    .btn.play{background-image:url("./bouton-play.png");}
 
     /* ===== Audio & Glitch ===== */
     audio{width:100%;opacity:.9;}
-    .glitch{position:absolute;inset:0;background:url("./image/glitch-overlay.png") center/cover repeat;mix-blend-mode:screen;opacity:0;pointer-events:none;animation:glitchAnim 1s steps(2) infinite;}
-    .glitch.active{opacity:.4;}@keyframes glitchAnim{0%,100%{opacity:0;}45%,55%{opacity:.4;}}
+    .glitch{position:absolute;inset:0;background:url("./glitch-overlay.png") center/cover repeat;
+      mix-blend-mode:screen;opacity:0;pointer-events:none;animation:glitchAnim 1s steps(2) infinite;}
+    .glitch.active{opacity:.4;}
+    @keyframes glitchAnim{0%,100%{opacity:0;}45%,55%{opacity:.4;}}
   </style>
 </head>
 <body>
-  <div class="header"><img id="titleImg" src="./image/redrum.png" alt="Redrum title"></div>
+  <!-- ===== Title ===== -->
+  <div class="header">
+    <img id="titleImg" src="./redrum.png" alt="REDЯURM title">
+  </div>
 
+  <!-- ===== Recorder Frame ===== -->
   <div class="frame">
-    <div style="margin-top:10px;"><img src="./image/micro-vintage.png" alt="Micro vintage" style="width:18vw;max-width:70px;height:auto;" /></div>
+    <div style="margin-top:10px;">
+      <img src="./micro-vintage.png" alt="Micro vintage" style="width:18vw;max-width:70px;height:auto;" />
+    </div>
+
     <button id="rec" class="btn rec" aria-label="Enregistrer"></button>
     <button id="play" class="btn play" aria-label="Lire à l'envers" disabled></button>
+
     <audio id="out" controls></audio>
     <div id="glitch" class="glitch"></div>
   </div>
 
+  <!-- ===== Script ===== -->
   <script>
-    const recBtn=document.getElementById('rec');
-    const playBtn=document.getElementById('play');
-    const audioEl=document.getElementById('out');
-    const glitch=document.getElementById('glitch');
-    const titleImg=document.getElementById('titleImg');
-    const sndRec=new Audio('./audio/rec-click.wav');
-    const sndPlay=new Audio('./audio/play-click.wav');
-    let mediaRec,chunks=[];
+    const recBtn   = document.getElementById('rec');
+    const playBtn  = document.getElementById('play');
+    const audioEl  = document.getElementById('out');
+    const glitch   = document.getElementById('glitch');
+    const titleImg = document.getElementById('titleImg');
+
+    // Sound FX (chemins racine)
+    const sndRec  = new Audio('./rec-click.wav');
+    const sndPlay = new Audio('./play-click.wav');
+
+    let mediaRec, chunks = [];
 
     /* === RECORD === */
-    recBtn.addEventListener('click',async()=>{
-      if(recBtn.dataset.rec==='on'){
-        glitch.classList.remove('active');titleImg.classList.remove('pulse');mediaRec.stop();
-      }else{
-        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-        mediaRec=new MediaRecorder(stream);chunks=[];
-        mediaRec.ondataavailable=e=>chunks.push(e.data);
-        mediaRec.onstop=handleStop;
-        sndRec.currentTime=0;sndRec.play();
-        mediaRec.start();recBtn.dataset.rec='on';
-        glitch.classList.add('active');titleImg.classList.add('pulse');
+    recBtn.addEventListener('click', async () => {
+      // Si on est déjà en enregistrement : on stoppe
+      if (recBtn.dataset.rec === 'on') {
+        glitch.classList.remove('active');
+        titleImg.classList.remove('pulse');
+        mediaRec.stop();
+        return;
       }
+
+      // Sinon : on lance l'enregistrement
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRec = new MediaRecorder(stream);
+      chunks   = [];
+
+      mediaRec.ondataavailable = e => chunks.push(e.data);
+      mediaRec.onstop          = handleStop;
+
+      sndRec.currentTime = 0;
+      sndRec.play();
+      mediaRec.start();
+      recBtn.dataset.rec = 'on';
+
+      glitch.classList.add('active');
+      titleImg.classList.add('pulse');
     });
 
-    /* === PLAY avec délai 3 s === */
-    playBtn.addEventListener('click',()=>{
-      if(!audioEl.src)return; sndPlay.currentTime=0;sndPlay.play();playBtn.disabled=true;
-      setTimeout(()=>{audioEl.play();playBtn.disabled=false;},3000);
+    /* === PLAY avec petit délai dramatique de 3s === */
+    playBtn.addEventListener('click', () => {
+      if (!audioEl.src) return;
+      sndPlay.currentTime = 0;
+      sndPlay.play();
+      playBtn.disabled = true;
+      setTimeout(() => {
+        audioEl.play();
+        playBtn.disabled = false;
+      }, 3000);
     });
 
-    async function handleStop(){
-      recBtn.dataset.rec='off';const blob=new Blob(chunks,{type:'audio/webm'});const buf=await(new AudioContext()).decodeAudioData(await blob.arrayBuffer());
-      for(let i=0;i<buf.numberOfChannels;i++)buf.getChannelData(i).reverse();
-      const offCtx=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);const src=offCtx.createBufferSource();src.buffer=buf;src.connect(offCtx.destination);src.start();
-      const rendered=await offCtx.startRendering();audioEl.src=URL.createObjectURL(bufferToWav(rendered));playBtn.disabled=false;
+    async function handleStop() {
+      recBtn.dataset.rec = 'off';
+
+      // Conversion en blob + décodage
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      const arrayBuffer = await blob.arrayBuffer();
+      const audioCtx = new AudioContext();
+      const decoded  = await audioCtx.decodeAudioData(arrayBuffer);
+
+      // On inverse les canaux
+      for (let i = 0; i < decoded.numberOfChannels; i++) {
+        decoded.getChannelData(i).reverse();
+      }
+
+      // On re-render le buffer inversé
+      const offCtx = new OfflineAudioContext(decoded.numberOfChannels, decoded.length, decoded.sampleRate);
+      const src = offCtx.createBufferSource();
+      src.buffer = decoded;
+      src.connect(offCtx.destination);
+      src.start();
+      const rendered = await offCtx.startRendering();
+
+      audioEl.src = URL.createObjectURL(bufferToWav(rendered));
+      playBtn.disabled = false;
+
+      // On coupe le glitch
+      glitch.classList.remove('active');
+      titleImg.classList.remove('pulse');
     }
 
-    function bufferToWav(b){const n=b.numberOfChannels,l=b.length*n*2+44,v=new DataView(new ArrayBuffer(l));const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};let o=0;w(o,'RIFF');o+=4;v.setUint32(o,l-8,true);o+=4;w(o,'WAVEfmt ');o+=8;v.setUint32(o,16,true);o+=4;v.setUint16(o,1,true);o+=2;v.setUint16(o,n,true);o+=2;v.setUint32(o,b.sampleRate,true);o+=4;v.setUint32(o,b.sampleRate*n*2,true);o+=4;v.setUint16(o,n*2,true);o+=2;v.setUint16(o,16,true);o+=2;w(o,'data');o+=4;v.setUint32(o,l-44,true);o+=4;for(let i=0;i<b.length;i++)for(let c=0;c<n;c++){let s=Math.max(-1,Math.min(1,b.getChannelData(c)[i]));v.setInt16(o,s<0?s*0x8000:s*0x7FFF,true);o+=2;}return new Blob([v],{type:'audio/wav'});}    
+    // Conversion AudioBuffer → WAV
+    function bufferToWav(b){
+      const n=b.numberOfChannels,l=b.length*n*2+44,v=new DataView(new ArrayBuffer(l));
+      const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+      let o=0;w(o,'RIFF');o+=4;v.setUint32(o,l-8,true);o+=4;w(o,'WAVEfmt ');o+=8;v.setUint32(o,16,true);o+=4;v.setUint16(o,1,true);o+=2;v.setUint16(o,n,true);o+=2;v.setUint32(o,b.sampleRate,true);o+=4;v.setUint32(o,b.sampleRate*n*2,true);o+=4;v.setUint16(o,n*2,true);o+=2;v.setUint16(o,16,true);o+=2;w(o,'data');o+=4;v.setUint32(o,l-44,true);o+=4;for(let i=0;i<b.length;i++)for(let c=0;c<n;c++){let s=Math.max(-1,Math.min(1,b.getChannelData(c)[i]));v.setInt16(o,s<0?s*0x8000:s*0x7FFF,true);o+=2;}return new Blob([v],{type:'audio/wav'});}    
 
-    if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(console.error);}  
+    // PWA : Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(console.error);
+    }
   </script>
 </body>
 </html>
